@@ -19,7 +19,7 @@ npm run build
 npm run typecheck
 ```
 
-The build exports a static site into `out/`. There are no secrets, databases, APIs, or server functions to configure. Sessions are not saved or sent anywhere. The app works best in an active browser tab: background tabs, device sleep, and mobile power saving can throttle audio and timers. The session clock catches up when the browser runs again; missed spoken cues are consolidated.
+The build exports a static site into `out/`. The rhythm studio needs no secrets or database. The Reddit viewer uses the included Cloudflare Worker API; see the Reddit section below. Session state is not sent anywhere. The app works best in an active browser tab: background tabs, device sleep, and mobile power saving can throttle audio and timers. The session clock catches up when the browser runs again; missed spoken cues are consolidated.
 
 ## Controls
 
@@ -43,7 +43,7 @@ Do not use a server-rendered Next.js preset or `next start` for this export. For
 
 ## Cloudflare Workers deployment (the existing connected project)
 
-The same static export also runs on Cloudflare Workers Static Assets. The checked-in `wrangler.jsonc` explicitly selects `out/`, so Wrangler does not auto-migrate Next.js to OpenNext. No server adapter or Worker JavaScript entry point is required.
+The Next.js static export runs on Cloudflare Workers Static Assets, with a small Worker serving the Reddit API. The checked-in `wrangler.jsonc` explicitly selects `out/`, so Wrangler does not auto-migrate Next.js to OpenNext. The `worker/index.ts` entry point serves `/api/reddit` and passes other requests to the static assets binding. No Next.js server adapter is required.
 
 For the connected **reddit-game** Worker, use these build settings:
 
@@ -70,6 +70,23 @@ npm run preview:cloudflare
 To deploy manually, authenticate Wrangler with your Cloudflare account and run `npm run deploy`. Cloudflare's connected Git build supplies its own deployment authentication. Do not store tokens in the repository.
 
 If a build log shows `opennextjs-cloudflare build` followed by a missing `.next/standalone/.next/server/pages-manifest.json`, the project was auto-detected as a server application. The explicit static-assets configuration fixes that mismatch. Deployment is only confirmed once Cloudflare reports success and provides a working URL.
+
+## Reddit photo and video shuffle
+
+The default communities are r/RubyJay, r/LilyBrooksOBriant, r/mckennagracelove, r/Anna_cathcart, r/XochitlGomezStan, r/MiyaCech, and r/MomonaTamada. Edit the community list in the Reddit room; it is saved only in that browser. Loading contacts Reddit and media hosts. No Reddit account login is collected from visitors.
+
+The viewer loads up to 100 current hot posts per community, chooses a community uniformly and then a random supported media item, and changes every 15 seconds. It avoids immediate repeats when another item is available. This is a shuffle of the loaded pool, not the full community archive. Pause and Next controls are independent of the rhythm session. Videos autoplay muted and are replaced at 15 seconds even when longer; controls allow manual playback and sound. Reddit fallback video streams often do not include an audio track. Images, GIFs, galleries, and Reddit-hosted MP4s are supported; third-party video embeds are not.
+
+**Deploy the complete app as the configured Cloudflare Worker.** Static Pages or a plain static file server cannot run `/api/reddit`. For local development with real Reddit data, run `npm run preview:cloudflare`; `npm run dev` alone provides the UI without the API. The browser reports access failures and keeps usable communities when some fail.
+
+Reddit public API access is not guaranteed. During development, Reddit returned HTTP 403 with “blocked by network security”; live data could not be verified from this environment. No access restrictions are bypassed. If Cloudflare is also denied, obtain approved Reddit API access for the intended usage. For an approved confidential Reddit application, set these **encrypted secrets** in the Cloudflare Worker’s Settings → Variables and Secrets:
+
+- `REDDIT_CLIENT_ID`
+- `REDDIT_CLIENT_SECRET`
+
+Or use `npx wrangler secret put REDDIT_CLIENT_ID` and `npx wrangler secret put REDDIT_CLIENT_SECRET` from an authenticated terminal. Never put values in Git, the frontend, or chat. The Worker uses application-only OAuth client credentials, caches the short-lived token, and reads from `oauth.reddit.com`. Public access is used only when both credentials are absent. A partial credential configuration does not enable OAuth. Reddit approval, subreddit restrictions, rate limits, and removed posts can still prevent access. No credentials are bundled or fabricated.
+
+For local OAuth testing, put those names and your values in an ignored `.dev.vars` file. Mocked tests verify extraction, request validation, access errors, OAuth routing, and 15-second shuffle behavior; they do not establish live Reddit access.
 
 ## Future music
 

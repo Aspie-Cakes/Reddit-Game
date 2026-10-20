@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import RedditViewer from "@/components/RedditViewer";
 import {
   difficultyBpm,
   formatTime,
@@ -554,6 +555,7 @@ export default function Home() {
           )}
         </section>
       </div>
+      <RedditViewer />
       <section className="bottom-notes">
         <div>
           <span>◈</span>
