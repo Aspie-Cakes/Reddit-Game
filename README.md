@@ -41,6 +41,36 @@ The build exports a static site into `out/`. There are no secrets, databases, AP
 
 Do not use a server-rendered Next.js preset or `next start` for this export. For a local production check, run `npx serve out` after building. `_headers` is copied into the export for Cloudflare security headers.
 
+## Cloudflare Workers deployment (the existing connected project)
+
+The same static export also runs on Cloudflare Workers Static Assets. The checked-in `wrangler.jsonc` explicitly selects `out/`, so Wrangler does not auto-migrate Next.js to OpenNext. No server adapter or Worker JavaScript entry point is required.
+
+For the connected **reddit-game** Worker, use these build settings:
+
+- Production branch: `main`
+- Root directory: repository root
+- Build command: `npm run build`
+- Deploy command: `npx wrangler deploy`
+- Node version: `24`
+
+Save the settings and retry deployment using the latest `main` commit. The asset directory is specified in `wrangler.jsonc`; do not select `.next` or run an OpenNext build. Keep the existing Pages instructions above if deploying through Pages instead.
+
+To check the deployment bundle without publishing:
+
+```sh
+npm run deploy:check
+```
+
+To preview the Cloudflare static-assets runtime locally:
+
+```sh
+npm run preview:cloudflare
+```
+
+To deploy manually, authenticate Wrangler with your Cloudflare account and run `npm run deploy`. Cloudflare's connected Git build supplies its own deployment authentication. Do not store tokens in the repository.
+
+If a build log shows `opennextjs-cloudflare build` followed by a missing `.next/standalone/.next/server/pages-manifest.json`, the project was auto-detected as a server application. The explicit static-assets configuration fixes that mismatch. Deployment is only confirmed once Cloudflare reports success and provides a working URL.
+
 ## Future music
 
 No music or remote audio is bundled or loaded. `lib/music.ts` defines `MusicProvider` and `MusicTrack`; a future licensed Suno catalog can implement the provider and add a player without changing the metronome. Track playback, licensing, and any authentication are intentionally left for that integration.
